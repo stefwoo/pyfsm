@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 '''
-This module contains all exceptions/errors of the cca api.
+This module provides various classes to crate finite state machines.
 
     Exports:
     Constants:            -
@@ -16,6 +16,10 @@ This module contains all exceptions/errors of the cca api.
 '''
 __all__ = []
 
+
+
+# TODO's:
+# 1. add __str__, __unicode__ methods to all classes
 # Python imports
 
 # Logger setup
@@ -40,6 +44,7 @@ class StateFactory(object):
         """
         """
         pass
+
 
 # TODO: create factory state class which provides hooks for the provided funcitons
 
@@ -78,9 +83,7 @@ class State(object):
         """
         pass
 
-    
 
-    
 class Event(object):
     """
     An event represents an external or internal stimulus which has to 
@@ -131,17 +134,17 @@ class Transition(object):
         @param dst_state: state which will be occupied after this transition.
         @param dst_state: State
         """
-        self._event_name = event_name
-        self._src_state = src_state
-        self._dst_state = dst_state
+        self.event_name = event_name
+        self.src_state = src_state
+        self.dst_state = dst_state
 
     
     def execute_transition(event_data):
         """
         Makes the transition from src_state to dst_state.
         """
-        src_state.exit_state(event_data)
-        dst_state.enter_state(event_data)
+        self.src_state.exit_state(event_data)
+        self.dst_state.enter_state(event_data)
 
 
 # TODO: Implement python container methods/behaviour
@@ -159,16 +162,46 @@ class TransitionManager(object):
         self._transitions = {}
 
 
+    # TODO: comment
     def add_transition(transition):
         """
+        Adds a state to this transition manager.
+
+        @param transition: which will be added.
+        @type transition: Transition 
+
+        @raise:
         """
-        pass
+        self._src_states[transition.src_state.name] = transition.src_state
+        self._dst_states[transition.dst_state.name] = transition.dst_state
+        
+        event_name = transition.event_name
+        src_sate   = transition.src_state
+
+        if (event_name in self._transitions) and (src_state.name in self._transitions[event_name]):
+            # report error => the given source state already has a transition
+            # from src state trigger by this event
+            raise FsmException("src_state/event_name combination already in use.")
+        else:
+            self._transitions[event_name][src_state.name] = transition.src_state
 
     
+    # TODO: comment 
     def remove_transition(transition):
         """
+        Removes a transition from this transition manager.
+
+        @param transition: which will be remvoed.
+        @type Transition
+
+        @raise:
         """
-        pass
+        event_name = transition.event_name
+        src_state  = transition.src_state
+        dst_state  = transition.dst_state
+        del self._src_states[src_state.name]
+        del self._dst_states[dst_state.name]
+        del self._transitions[event_name][src_state.name]
 
    
     # TODO: comment 
@@ -187,7 +220,14 @@ class TransitionManager(object):
         @return the transition suitable for the specified state/event combination.
         @rtype: Transition
         """
-        pass
+        transition = None
+        if (event.name in self._transitions) and (state.name in self._transitions[event.name]):
+            transition = self._transitions[event.name][state.name]
+        else:
+            err_msg = "No transition for the specified state/event combination available."
+            raise FsmException(err_msg)
+
+        return transition
 
 
 class StateMachine(object):
@@ -206,21 +246,34 @@ class StateMachine(object):
 
     def add_transition(transition):
         """
+        Adds a transition to this state machine.
+
+        @param transition: which will be added to this state machine.
+        @type transition: Transition
         """
-        pass
+        self._transition_mgr.add_transition(transition)
 
 
     def remove_transition(transition):
         """
+        Remvoes a transition from this state machine.
+
+        @param transition: which will be removed from this state machine.
+        @type transition: Transition
         """
-        pass 
+        self._transition_mgr.remove_transition(transition) 
 
 
     def trigger_event(self, event):
         """
+        Triggers an event in this state machine.
+
+        @param event: which will be triggered.
+        @type event: Event
         """
         transition = self._transition_mgr.get_transition(self._current_state, event)
         transition.execute_transition(event.data)
+
 
     def execute_current_state():
         """
@@ -231,13 +284,17 @@ class StateMachine(object):
 
 
 # -- Module Decorators ---------------------------------------------------------
-# -- Module Exceptions --------------------------------------------------------
-
+# -- Module Exceptions -------------------------------------------------------- 
 class FsmException(Exception):
     """
     """
-    pass
-    
+   
+    def __init__(self, *args, **kwargs):
+        """
+        Creates a new FsmException.
+        """
+        super(FsmException, self).__init__(*args, **kwargs) 
+
 
 # TODO: Add example code
 if __name__ == '__main__':
