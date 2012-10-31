@@ -3,7 +3,7 @@
 '''
 This module provides various classes to crate finite state machines.
 
-    Exports:
+    Exports:              -
     Constants:            -
     Functions:            -
     Classes:              -
@@ -14,40 +14,21 @@ This module provides various classes to crate finite state machines.
 @contact: nico.coretti@googlemail.com
 @version: 0.0.1 
 '''
-__all__ = []
+__all__ = ['State', 'Event', 'EventData', 'Transition', 'TransitionManager', 'StateMachine', 'FsmException']
 
 
 
 # TODO's:
 # 1. add __str__, __unicode__ methods to all classes
+
 # Python imports
+from UserDict import UserDict
 
 # Logger setup
 
 # -- Module Constants ---------------------------------------------------------
 # -- Module Functions ---------------------------------------------------------
 # -- Module Classes -----------------------------------------------------------
-
-class StateFactory(object):
-    """
-    A StateFactory can be used to create state objects without subclassing the 
-    State class.
-    """
-
-    def __init__(self):
-        """
-        """
-        pass
-
-
-    def create_state(name, enter_state_func=None, in_state_func=None, exit_state_func=None):
-        """
-        """
-        pass
-
-
-# TODO: create factory state class which provides hooks for the provided funcitons
-
 
 class State(object):
     """
@@ -91,27 +72,34 @@ class Event(object):
     of the fsm.
     """
 
-    # TODO: Comment 
-    def __init__(self, name, event_data)
+    def __init__(self, name, event_data=None):
         """
         Creates a new event.
 
         @param name: an unique name which identifies the event.
         @type name: string
 
-        @param event_params: 
-        @type event_params:
+        @param event_data: data associated with this event.
         """
         self.name = name
+        if event_data == None: event_data = EventData()
         self.data = event_data 
 
 
-class EventData(object):
+class EventData(UserDict):
     """
     This class is a container for various kinds of event data.
     Event data is used to provide further information for an event.
     """
-    pass
+
+    # TODO: comment
+    def __init__(self, data_dict={}):
+        """
+        Creates a new EventData object.
+        
+        @param data_dict:
+        """ 
+        self.data = data_dict
 
 
 class Transition(object):
@@ -142,9 +130,13 @@ class Transition(object):
     def execute_transition(event_data):
         """
         Makes the transition from src_state to dst_state.
+
+        @return: new active state.
         """
         self.src_state.exit_state(event_data)
         self.dst_state.enter_state(event_data)
+    
+        return self.dst_state
 
 
 # TODO: Implement python container methods/behaviour
@@ -272,7 +264,7 @@ class StateMachine(object):
         @type event: Event
         """
         transition = self._transition_mgr.get_transition(self._current_state, event)
-        transition.execute_transition(event.data)
+        self._current_state = transition.execute_transition(event.data)
 
 
     def execute_current_state():
@@ -287,6 +279,7 @@ class StateMachine(object):
 # -- Module Exceptions -------------------------------------------------------- 
 class FsmException(Exception):
     """
+    Base class for all exceptions of the fsm module.
     """
    
     def __init__(self, *args, **kwargs):
@@ -299,6 +292,3 @@ class FsmException(Exception):
 # TODO: Add example code
 if __name__ == '__main__':
     pass
-    
-
-# TODO: Add unit tests
