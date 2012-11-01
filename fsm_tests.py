@@ -19,6 +19,9 @@ __all__ = []
 # Python imports
 import unittest
 
+# fsm imports
+from fsm import *
+
 class TestState(State):
     """
     A subclass of the state class for test purposes.
@@ -42,11 +45,39 @@ class TestState(State):
         event_data["exit_state"]  = False
         event_data["in_state"]    = True
 
+
+class TestTransition(unittest.TestCase):
+    """
+    Tests the basic functionality of the Transition class.
+    """
+
+
+    def setUp(self):
+
+        self.state1 = State()
+        self.state2 = State()
+    
+        self.event1 = 
+        self.transition1 = Transition()
+        self.transition2 = Transition()
+        self.transition3 = Transition()
+    
+    def test_exectue_transition_test1(self):
+        pass
+
+    def test_exectue_transition_test2(self):
+        pass
+
+    def test_exectue_transition_test3(self):
+        pass
+
+
 class TestStateMachine(unittest.TestCase):
 
 
     def setUp(self):
         pass
+
 
 
 class TestStateBasicFunctionality(unittest.TestCase):
