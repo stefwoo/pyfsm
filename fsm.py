@@ -14,7 +14,7 @@ This module provides various classes to crate finite state machines.
 @contact: nico.coretti@googlemail.com
 @version: 0.0.1 
 '''
-__all__ = ['State', 'Event', 'EventData', 'Transition', 'TransitionManager', 'StateMachine', 'FsmException']
+__all__ = ['State', 'Event', 'EventData', 'Transition', 'TransitionTable', 'StateMachine', 'FsmException']
 
 
 
@@ -26,99 +26,75 @@ from UserDict import UserDict
 
 # Logger setup
 
+# TODO: add optional logging for states and transitions ...
+# TODO: 
+
 # -- Module Constants ---------------------------------------------------------
 # -- Module Functions ---------------------------------------------------------
 # -- Module Classes -----------------------------------------------------------
 
 class State(object):
     """
-    A state with 
+    A state with a name and an description.
     """
-
-    def __init__(self, name):
+    
+    def __init__(self, name, description=""):
         """
         Creates a new state.
-
-        @param name: an unique name which identifies this state.
+        
+        @param name: an unique name which identifies this state and it's purpose.
+        
+        @param description: a detailed description what this state is all about.
         """
         self.name = name 
-    
+        self.description = description
+        # maybe add final and error state indicator
 
     def enter_state(self, event_data):
         """
         This method is invoked every time this state will be entered.
         """
-        pass
+        raise Exception("Not implemented.")
 
 
     def exit_state(self, event_data):
         """
         This method is invoked every time before this state will be left.
         """
-        pass
-
-
-    def in_state(self, event_data):
-        """
-        This method is invoked periodically.
-        """
-        pass
+        raise Exception("Not implemented.")
 
 
 class Event(object):
     """
-    An event represents an external or internal stimulus which has to 
-    be handled by a state machine. Usualy an event will cause an state change
-    of the fsm.
+    An Event consists of a name and associated data, it represents an external 
+    or internal stimulus which has to be handled by a state machine. 
     """
-
-    def __init__(self, name, event_data=None):
+    
+    def __init__(self, name, event_data):
         """
         Creates a new event.
-
+        
         @param name: an unique name which identifies the event.
         @type name: string
-
+        
         @param event_data: data associated with this event.
         """
         self.name = name
-        if event_data == None: event_data = EventData()
         self.data = event_data 
-
-
-class EventData(UserDict):
-    """
-    This class is a container for various kinds of event data.
-    Event data is used to provide further information for an event.
-    """
-
-    # TODO: comment
-    def __init__(self, data_dict={}):
-        """
-        Creates a new EventData object.
-        
-        @param data_dict:
-        """ 
-        self.data = data_dict
 
 
 class Transition(object):
     """
-    A transition with a source state an event name and 
-    a destionation state. Transition are used by state machines
-    to determine when and how a state will and can be changed. 
+    A Transition with a source state and a destination state.  
     """
 
-    def __init__(self, src_state, event_name,  dst_state):
+    def __init__(self, src_state, dst_state, action=None):
         """
         Creates a new Transition object.
-
+        
         @param src_state:
         @type src_state: State
-
-        @param event_name: name of the event which triggers this transition.
-        @type event_name: string
-
+        
         @param dst_state: state which will be occupied after this transition.
         @param dst_state: State
         """
@@ -134,28 +110,28 @@ class Transition(object):
         @return: new active state.
         """
         self.src_state.exit_state(event_data)
+        if action != None: action()
         self.dst_state.enter_state(event_data)
     
         return self.dst_state
 
 
-# TODO: Implement python container methods/behaviour
-class TransitionManager(object):
+class TransitionTable(object):
     """
-    A TransitionManager with various transitions.
+    A TransitionTable with various transitions.
     """
 
     def __init__(self, transitions):
         """
-        Creates a new TransitionManager.
+        Creates a new TransitionTable.
         """
-        self._src_states = {}
-        self._dst_states = {}
-        self._transitions = {}
+        # key: class name of the state  value: transition dict
+        # transition dict = key event class name, value: transition
+        self.transition_table = {}
 
 
     # TODO: comment
-    def add_transition(transition):
+    def add_transition(src_state, event, dst_state, action=None):
         """
         Adds a state to this transition manager.
 
@@ -164,22 +140,11 @@ class TransitionManager(object):
 
         @raise:
         """
-        self._src_states[transition.src_state.name] = transition.src_state
-        self._dst_states[transition.dst_state.name] = transition.dst_state
-        
-        event_name = transition.event_name
-        src_sate   = transition.src_state
+        pass
 
-        if (event_name in self._transitions) and (src_state.name in self._transitions[event_name]):
-            # report error => the given source state already has a transition
-            # from src state trigger by this event
-            raise FsmException("src_state/event_name combination already in use.")
-        else:
-            self._transitions[event_name][src_state.name] = transition.src_state
 
-    
     # TODO: comment 
-    def remove_transition(transition):
+    def remove_transition(src_state, event, dst_state, action=None):
         """
         Removes a transition from this transition manager.
 
@@ -188,12 +153,7 @@ class TransitionManager(object):
 
         @raise:
         """
-        event_name = transition.event_name
-        src_state  = transition.src_state
-        dst_state  = transition.dst_state
-        del self._src_states[src_state.name]
-        del self._dst_states[dst_state.name]
-        del self._transitions[event_name][src_state.name]
+        pass
 
    
     # TODO: comment 
@@ -212,14 +172,7 @@ class TransitionManager(object):
         @return the transition suitable for the specified state/event combination.
         @rtype: Transition
         """
-        transition = None
-        if (event.name in self._transitions) and (state.name in self._transitions[event.name]):
-            transition = self._transitions[event.name][state.name]
-        else:
-            err_msg = "No transition for the specified state/event combination available."
-            raise FsmException(err_msg)
-
-        return transition
+        pass
 
 
 class StateMachine(object):
@@ -228,32 +181,32 @@ class StateMachine(object):
     which will be used to switch between states.
     """
 
-    def __init__(self):
+    def __init__(self, transition_table):
         """
         Creates a new StateMachine.
         """
         self._current_state = None
-        self._transition_mgr = TransitionManager()
+        self._transition_table = TransitionTable()
 
 
-    def add_transition(transition):
+    def add_transition(src_state, event, dst_state):
         """
         Adds a transition to this state machine.
 
         @param transition: which will be added to this state machine.
         @type transition: Transition
         """
-        self._transition_mgr.add_transition(transition)
+        pass
 
 
-    def remove_transition(transition):
+    def remove_transition(src_state, event, dst_state):
         """
         Remvoes a transition from this state machine.
 
         @param transition: which will be removed from this state machine.
         @type transition: Transition
         """
-        self._transition_mgr.remove_transition(transition) 
+        pass
 
 
     def trigger_event(self, event):
@@ -263,16 +216,13 @@ class StateMachine(object):
         @param event: which will be triggered.
         @type event: Event
         """
-        transition = self._transition_mgr.get_transition(self._current_state, event)
-        self._current_state = transition.execute_transition(event.data)
+        pass
 
-
-    def execute_current_state():
+    
+    def print_state_machine(self):
         """
-        Periodically calls the in_state method of the current state.
         """
-        event = Event()
-        self._current_state.in_state(event.data)
+        pass
 
 
 # -- Module Decorators ---------------------------------------------------------
