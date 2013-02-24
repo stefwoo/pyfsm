@@ -14,20 +14,13 @@ This module provides various classes to crate finite state machines.
 @contact: nico.coretti@googlemail.com
 @version: 0.0.1 
 '''
+from numpy.ma.extras import in1d
+
 __all__ = ['State', 'Event', 'EventData', 'Transition', 'TransitionTable', 'StateMachine', 'FsmException']
 
 
-
-# TODO's:
-# 1. add __str__, __unicode__ methods to all classes
-
-# Python imports
-from UserDict import UserDict
-
 # Logger setup
 
-# TODO: add optional logging for states and transitions ...
-# TODO: 
 
 # -- Module Constants ---------------------------------------------------------
 # -- Module Functions ---------------------------------------------------------
@@ -48,26 +41,42 @@ class State(object):
         """
         self.name = name 
         self.description = description
-        # maybe add final and error state indicator
+
 
     def enter_state(self, event_data):
         """
         This method is invoked every time this state will be entered.
+
+        @param event_data: which was provided by the event which provoked to
+                           switch into this state.
         """
-        raise Exception("Not implemented.")
+        raise FsmException("Not implemented.")
 
 
     def exit_state(self, event_data):
         """
         This method is invoked every time before this state will be left.
+
+        @param event_data: which was provided by the event which provoked to
+                           leave this state.
         """
-        raise Exception("Not implemented.")
+        raise FsmException("Not implemented.")
+
+
+    def  __str__(self):
+        """
+        @return: a human readable representation of this object.
+        """
+        str_repr = "State: {0}, Description: {1}"
+        str_repr = str_repr.format(self.name, self.description)
+
+        return str_repr
 
 
 class Event(object):
     """
     An Event consists of a name and associated data, it represents an external 
-    or internal stimulus which has to be handled by a state machine. 
+    or internal stimulus which has to be handled by a state machine.
     """
     
     def __init__(self, name, event_data):
@@ -80,7 +89,17 @@ class Event(object):
         @param event_data: data associated with this event.
         """
         self.name = name
-        self.data = event_data 
+        self.data = event_data
+
+
+    def __str__(self):
+        """
+        @return: a human readable representation of this object.
+        """
+        str_repr = "Event: {0}, Event-Args: {1}"
+        str_repr = str_repr.format(self.name, self.data)
+
+        return str_repr
 
 
 class Transition(object):
@@ -88,22 +107,22 @@ class Transition(object):
     A Transition with a source state and a destination state.  
     """
 
-    def __init__(self, src_state, dst_state, action=None):
+    def __init__(self, src_state, dst_state, action = None):
         """
         Creates a new Transition object.
-        
+
         @param src_state:
         @type src_state: State
         
         @param dst_state: state which will be occupied after this transition.
         @param dst_state: State
         """
-        self.event_name = event_name
         self.src_state = src_state
         self.dst_state = dst_state
+        self.action = action
 
     
-    def execute_transition(event_data):
+    def execute_transition(self, event_data):
         """
         Makes the transition from src_state to dst_state.
 
@@ -116,63 +135,101 @@ class Transition(object):
         return self.dst_state
 
 
+    def  __str__(self):
+        """
+        @return: a human readable representation of this object.
+        """
+        str_repr = "{0} => {1}, Action: {2}"
+        str_repr = str_repr.format(self.src_state, self.dst_state, self.ac)
+
+        return str_repr
+
+
 class TransitionTable(object):
     """
-    A TransitionTable with various transitions.
+    A TransitionTable with various transitions and their associated events to trigger them.
     """
 
-    def __init__(self, transitions):
+    def __init__(self):
         """
         Creates a new TransitionTable.
+
+        @param transition_event_mapping:
+        @rtype dict
         """
         # key: class name of the state  value: transition dict
         # transition dict = key event class name, value: transition
         self.transition_table = {}
 
 
-    # TODO: comment
-    def add_transition(src_state, event, dst_state, action=None):
+    def add_transition(self, src_state, event, dst_state, action=None):
         """
-        Adds a state to this transition manager.
+        Adds a state to this transition table.
 
-        @param transition: which will be added.
-        @type transition: Transition 
+        @param src_state: which will be used to create the transition.
+        @param event: which shall trigger the created transition.
+        @param dst_state: which will be used to create the transition.
 
-        @raise:
+        @return: a reference to the new created and added transition.
         """
-        pass
+        transition = Transition(src_state, dst_state, action)
+        if event.name in self.transition_table:
+            self.transition_table[event.name][src_state.name] = transition
+        else:
+            self.transition_table[event.name] = {}
+            self.transition_table[event.name][src_state.name] = transition
+
+        return transition
 
 
     # TODO: comment 
-    def remove_transition(src_state, event, dst_state, action=None):
+    def remove_transition(self, src_state, event, dst_state, action=None):
         """
         Removes a transition from this transition manager.
-
-        @param transition: which will be remvoed.
-        @type Transition
-
-        @raise:
         """
-        pass
+        if event.name in self.transition_table and src_state.name in self.transition_table[event.name]:
+            del self.transition_table[event.name][src_state.name]
 
    
-    # TODO: comment 
-    def get_transition(self, state, event):
+    def get_transition(self, current_state, event):
         """
         Gets the transition for the specified state
         with the given event. If no transition is available
         an exception will be thrown.
 
-        @param state:
-        @type state:
+        @param current_state: source state of the transition.
+        @type state: State
 
-        @param event:
-        @type event: 
+        @param event: which triggers the transition.
+        @type event: Event
 
         @return the transition suitable for the specified state/event combination.
         @rtype: Transition
+
+        @raise if no suitable transition was found an FsmException will be thrown.
         """
-        pass
+        transition = None
+        if event.name in self.transition_table:
+            if current_state.name in self.transition_table[event.name]:
+                transition = self.transition_table[event.name][current_state.name]
+            else:
+                err_msg = "No transition available for Event: {0} in State: {1}"
+                err_msg = err_msg.format(event.name, current_state.name)
+                raise FsmException(err_msg)
+        else:
+            err_msg = "No transitions available for this Event ({0})"
+            err_msg = err_msg.format()
+            raise FsmException(err_msg)
+
+        return transition
+
+
+    def  __str__(self):
+        """
+        @return: a human readable representation of this object.
+        """
+        err_msg = "Not implemented yet."
+        raise Exception(err_msg)
 
 
 class StateMachine(object):
@@ -181,32 +238,46 @@ class StateMachine(object):
     which will be used to switch between states.
     """
 
-    def __init__(self, transition_table):
+    def __init__(self, start_state, transition_table):
         """
         Creates a new StateMachine.
+
+        @param start_state: of this state machine.
+        @param transition_table: which is used to switch states.
+
+        @raise: FsmException if invalid initializer arguments are specified.
         """
-        self._current_state = None
-        self._transition_table = TransitionTable()
+        if start_state == None:
+            err_msg = "No inital state specified"
+            raise FsmException(err_msg)
+        if transition_table == None:
+            err_msg = "No transition table specified"
+            raise FsmException(err_msg)
+
+        self.current_state = in1d
+        self.transition_table = transition_table
 
 
-    def add_transition(src_state, event, dst_state):
+    def add_transition(self, src_state, event, dst_state):
         """
         Adds a transition to this state machine.
 
         @param transition: which will be added to this state machine.
         @type transition: Transition
         """
-        pass
+        err_msg = "Not implemented yet."
+        raise Exception(err_msg)
 
 
-    def remove_transition(src_state, event, dst_state):
+    def remove_transition(self, src_state, event, dst_state):
         """
         Remvoes a transition from this state machine.
 
         @param transition: which will be removed from this state machine.
         @type transition: Transition
         """
-        pass
+        err_msg = "Not implemented yet."
+        raise Exception(err_msg)
 
 
     def trigger_event(self, event):
@@ -216,13 +287,26 @@ class StateMachine(object):
         @param event: which will be triggered.
         @type event: Event
         """
-        pass
+        err_msg = "Not implemented yet."
+        raise Exception(err_msg)
 
     
     def print_state_machine(self):
         """
+        Prints a human readable represenation of this statemachine to stdout.
         """
-        pass
+        state_machine_str = ""
+        print(state_machine_str)
+
+
+    def  __str__(self):
+        """
+        @return: a human readable representation of this object.
+        """
+        str_repr = "Current-State: {0}\n\nTransition-Table:\n--------------------\n{1}"
+        str_repr = str_repr.format(self.current_state, self.transition_table)
+
+        return str_repr
 
 
 # -- Module Decorators ---------------------------------------------------------
@@ -237,8 +321,3 @@ class FsmException(Exception):
         Creates a new FsmException.
         """
         super(FsmException, self).__init__(*args, **kwargs) 
-
-
-# TODO: Add example code
-if __name__ == '__main__':
-    pass
