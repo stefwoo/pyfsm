@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-'''
+"""
 This module provides various classes to crate finite state machines.
 
     Exports:              -
@@ -13,8 +13,7 @@ This module provides various classes to crate finite state machines.
 @author: Nicola Coretti
 @contact: nico.coretti@googlemail.com
 @version: 0.0.1 
-'''
-from numpy.ma.extras import in1d
+"""
 
 __all__ = ['State', 'Event', 'EventData', 'Transition', 'TransitionTable', 'StateMachine', 'FsmException']
 
@@ -129,7 +128,7 @@ class Transition(object):
         @return: new active state.
         """
         self.src_state.exit_state(event_data)
-        if action != None: action()
+        if self.action is not None: self.action()
         self.dst_state.enter_state(event_data)
     
         return self.dst_state
@@ -140,7 +139,7 @@ class Transition(object):
         @return: a human readable representation of this object.
         """
         str_repr = "{0} => {1}, Action: {2}"
-        str_repr = str_repr.format(self.src_state, self.dst_state, self.ac)
+        str_repr = str_repr.format(self.src_state, self.dst_state, self.action)
 
         return str_repr
 
@@ -152,19 +151,17 @@ class TransitionTable(object):
 
     def __init__(self):
         """
-        Creates a new TransitionTable.
-
-        @param transition_event_mapping:
-        @rtype dict
+        Creates a new empty TransitionTable.
         """
         # key: class name of the state  value: transition dict
         # transition dict = key event class name, value: transition
         self.transition_table = {}
 
 
+    # TODO: comment param action
     def add_transition(self, src_state, event, dst_state, action=None):
         """
-        Adds a state to this transition table.
+        Adds a transition to this transition table.
 
         @param src_state: which will be used to create the transition.
         @param event: which shall trigger the created transition.
@@ -182,8 +179,8 @@ class TransitionTable(object):
         return transition
 
 
-    # TODO: comment 
-    def remove_transition(self, src_state, event, dst_state, action=None):
+    # TODO: comment / bugfix => dst_state is not considered in deletion
+    def remove_transition(self, src_state, event, dst_state):
         """
         Removes a transition from this transition manager.
         """
@@ -198,7 +195,7 @@ class TransitionTable(object):
         an exception will be thrown.
 
         @param current_state: source state of the transition.
-        @type state: State
+        @type current_state: State
 
         @param event: which triggers the transition.
         @type event: Event
@@ -247,37 +244,37 @@ class StateMachine(object):
 
         @raise: FsmException if invalid initializer arguments are specified.
         """
-        if start_state == None:
-            err_msg = "No inital state specified"
+        if start_state is None:
+            err_msg = "No initial state specified"
             raise FsmException(err_msg)
-        if transition_table == None:
+        if transition_table is None:
             err_msg = "No transition table specified"
             raise FsmException(err_msg)
 
-        self.current_state = in1d
+        self.current_state = start_state
         self.transition_table = transition_table
 
 
-    def add_transition(self, src_state, event, dst_state):
+    # TODO: comment param action
+    def add_transition(self, src_state, event, dst_state, action=None):
         """
         Adds a transition to this state machine.
 
-        @param transition: which will be added to this state machine.
-        @type transition: Transition
+        @param src_state: which will be used to create the transition.
+        @param event: which shall trigger the created transition.
+        @param dst_state: which will be used to create the transition.
+
+        @return: a reference to the new created and added transition.
         """
-        err_msg = "Not implemented yet."
-        raise Exception(err_msg)
+        return self.transition_table.add_transition(src_state, event, dst_state, action)
 
 
+    # TODO: provide comment for parameters
     def remove_transition(self, src_state, event, dst_state):
         """
-        Remvoes a transition from this state machine.
-
-        @param transition: which will be removed from this state machine.
-        @type transition: Transition
+        Removes a transition from this state machine.
         """
-        err_msg = "Not implemented yet."
-        raise Exception(err_msg)
+        return self.transition_table.remove_transition(src_state, event, dst_state)
 
 
     def trigger_event(self, event):
@@ -287,13 +284,15 @@ class StateMachine(object):
         @param event: which will be triggered.
         @type event: Event
         """
-        err_msg = "Not implemented yet."
-        raise Exception(err_msg)
+        transition = self.transition_table.get_transition(self.current_state, event)
+        self.current_state = transition.execute_transition(event.data)
+
+        return self.current_state
 
     
     def print_state_machine(self):
         """
-        Prints a human readable represenation of this statemachine to stdout.
+        Prints a human readable representation of this state machine to std out.
         """
         state_machine_str = ""
         print(state_machine_str)
