@@ -138,7 +138,7 @@ class Transition(object):
         """
         @return: a human readable representation of this object.
         """
-        str_repr = "{0} => {1}, Action: {2}"
+        str_repr = "{0: 300<} => {1: 30<}, Action: {2}"
         str_repr = str_repr.format(self.src_state, self.dst_state, self.action)
 
         return str_repr
