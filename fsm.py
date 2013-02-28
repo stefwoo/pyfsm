@@ -106,7 +106,7 @@ class Transition(object):
     A Transition with a source state and a destination state.  
     """
 
-    def __init__(self, src_state, dst_state, action = None):
+    def __init__(self, src_state, dst_state, action=None):
         """
         Creates a new Transition object.
 
